@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilmKu Community</title>
+    <title>FilmKu Community - Koleksi Lengkap</title>
     <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Memuat Google Font "Poppins" -->
@@ -20,14 +20,17 @@
         .movie-gallery::-webkit-scrollbar { height: 8px; }
         .movie-gallery::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
         .movie-gallery::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        .movie-gallery::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        .aspect-video { position: relative; width: 100%; padding-bottom: 56.25%; }
-        .aspect-video iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        /* Style untuk komentar */
         #commentList::-webkit-scrollbar { width: 5px; }
         #commentList::-webkit-scrollbar-track { background: transparent; }
         #commentList::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        .aspect-video { position: relative; width: 100%; padding-bottom: 56.25%; }
+        .aspect-video iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .liked { color: #ec4899; } /* pink-500 */
+        /* Style untuk tombol yang dinonaktifkan */
+        :disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -57,7 +60,6 @@
                         <iframe id="videoPlayer" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
                     </div>
                 </div>
-                <!-- Info Film -->
                 <div class="bg-gray-800 rounded-lg p-5">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -68,13 +70,12 @@
                             <i class="fa-solid fa-expand"></i>
                         </button>
                     </div>
-                     <!-- Tombol Suka -->
                     <div class="flex items-center space-x-4 text-gray-400">
-                        <button id="likeBtn" class="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-300">
+                        <button id="likeBtn" class="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-300" disabled>
                             <i id="likeIcon" class="fa-regular fa-heart"></i>
                             <span id="likeCount" class="font-semibold">0</span>
                         </button>
-                         <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2">
                             <i class="fa-regular fa-comments"></i>
                             <span id="commentCount" class="font-semibold">0</span>
                         </div>
@@ -86,12 +87,12 @@
             <div class="bg-gray-800 rounded-lg p-5 flex flex-col h-[720px]">
                 <h3 class="text-lg font-bold mb-4 text-white">Ulasan Penonton</h3>
                 <div id="commentList" class="flex-grow overflow-y-auto pr-2 space-y-4">
-                    <!-- Komentar akan ditampilkan di sini -->
+                     <p class="text-gray-500 text-center italic">Memuat ulasan...</p>
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-700">
                     <form id="commentForm" class="flex items-center space-x-3">
-                        <input type="text" id="commentInput" placeholder="Tulis komentar Anda..." class="w-full bg-gray-700 text-gray-200 placeholder-gray-400 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition" required>
-                        <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-2.5 transition-colors flex-shrink-0">
+                        <input type="text" id="commentInput" placeholder="Tulis komentar..." class="w-full bg-gray-700 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-400" disabled>
+                        <button type="submit" id="commentSubmitBtn" class="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-2.5 transition-colors flex-shrink-0" disabled>
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </form>
@@ -103,9 +104,7 @@
     <!-- Galeri Film -->
     <section class="container mx-auto mt-12 mb-12 px-4 sm:px-6">
         <h3 class="text-xl font-semibold mb-4 border-l-4 border-cyan-400 pl-4">Daftar Putar Anda</h3>
-        <div id="movieGallery" class="movie-gallery flex overflow-x-auto space-x-4 sm:space-x-6 pb-4">
-            <!-- Kartu film akan ditambahkan oleh JavaScript -->
-        </div>
+        <div id="movieGallery" class="movie-gallery flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"></div>
     </section>
 
     <!-- Footer -->
@@ -117,40 +116,47 @@
     
     <!-- Firebase SDK -->
     <script type="module">
-        // Import fungsi-fungsi yang diperlukan dari Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, getDoc, setDoc, updateDoc, deleteDoc, increment, onSnapshot, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Konfigurasi Firebase Anda
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO", authDomain: "DEMO", projectId: "DEMO" };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Inisialisasi Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Data Film
         const movies = [
             { id: 'lf79ml3m2gdv', title: 'Sang Penjelajah Waktu', description: 'Seorang ilmuwan jenius menciptakan mesin waktu, namun perjalanannya ke masa depan mengungkap takdir kelam umat manusia.', embedUrl: 'https://movearnpre.com/embed/lf79ml3m2gdv' },
             { id: '8bh6v468o1uv', title: 'Misi Rahasia: Fajar', description: 'Agen rahasia terbaik harus menghentikan organisasi teroris global sebelum mereka melepaskan senjata biologis mematikan.', embedUrl: 'https://movearnpre.com/embed/8bh6v468o1uv' },
             { id: '3vsaozfag5fo', title: 'Garis Takdir', description: 'Dua orang dari dunia yang berbeda bertemu secara tak sengaja, memulai kisah cinta yang terhalang oleh restu dan status sosial.', embedUrl: 'https://movearnpre.com/embed/3vsaozfag5fo' },
             { id: 'qtjcc3ali6uj', title: 'Hutan Menjerit', description: 'Sekelompok mahasiswa tersesat di hutan terlarang dan harus bertahan hidup dari teror entitas gaib yang menghuninya.', embedUrl: 'https://movearnpre.com/embed/qtjcc3ali6uj' },
             { id: 'do3dfe167no9', title: 'Warisan Tahta Brawijaya', description: 'Perebutan kekuasaan di era kerajaan kuno yang penuh dengan intrik, pengkhianatan, dan pertempuran epik.', embedUrl: 'https://movearnpre.com/embed/do3dfe167no9' },
+            { id: 'yufrpo4njxk5', title: 'Robot Terakhir', description: 'Di dunia pasca-apokaliptik, sebuah robot tua menjadi harapan terakhir seorang gadis kecil untuk menemukan keluarganya.', embedUrl: 'https://movearnpre.com/embed/yufrpo4njxk5' },
+            { id: 'bjtjqsuapy6g', title: 'Cahaya di Ujung Lorong', description: 'Kisah inspiratif seorang anak jalanan yang berjuang meraih mimpinya menjadi musisi terkenal di tengah kerasnya ibu kota.', embedUrl: 'https://movearnpre.com/embed/bjtjqsuapy6g' },
+            { id: 'e8f11ylwi9y7', title: 'Dendam Kesatria Naga', description: 'Seorang pendekar harus membalaskan dendam gurunya yang dibunuh oleh klan jahat penguasa negeri.', embedUrl: 'https://movearnpre.com/embed/e8f11ylwi9y7' },
+            { id: '4c2g2w9s2v3j', title: 'Operasi Senyap', description: 'Pasukan khusus ditugaskan untuk menyusup ke markas musuh di bawah laut dalam sebuah misi yang hampir mustahil.', embedUrl: 'https://movearnpre.com/embed/4c2g2w9s2v3j' },
+            { id: 'jc0wev6n8vto', title: 'Melodi Patah Hati', description: 'Kisah cinta rumit antara seorang penyanyi kafe dan seorang penulis yang sama-sama takut untuk berkomitmen.', embedUrl: 'https://movearnpre.com/embed/jc0wev6n8vto' },
+            { id: 'n2swna3cpfgs', title: 'Jejak Sang Juara', description: 'Film biografi tentang perjalanan seorang atlet bulu tangkis dari desa kecil hingga menjadi juara dunia.', embedUrl: 'https://movearnpre.com/embed/n2swna3cpfgs' },
+            { id: 'fg213f9vc70e', title: 'Kota Para Zombie', description: 'Wabah misterius mengubah penduduk kota menjadi mayat hidup. Sekelompok penyintas berjuang mencari tempat aman.', embedUrl: 'https://movearnpre.com/embed/fg213f9vc70e' },
+            { id: 'xinuis21vl35', title: 'Petualangan di Pulau Harta', description: 'Peta kuno membawa sekelompok sahabat dalam petualangan berbahaya mencari harta karun legendaris.', embedUrl: 'https://movearnpre.com/embed/xinuis21vl35' },
+            { id: '42v6txzzfvza', title: 'Skakmat', description: 'Seorang detektif brilian harus adu cerdas dengan seorang pembunuh berantai yang meninggalkan petunjuk catur di setiap TKP.', embedUrl: 'https://movearnpre.com/embed/42v6txzzfvza' },
+            { id: '82j8y105yutb', title: 'Di Balik Layar', description: 'Sebuah komedi satir tentang kekacauan dan drama yang terjadi di balik pembuatan sebuah film blockbuster.', embedUrl: 'https://movearnpre.com/embed/82j8y105yutb' },
+            { id: 'd4iihcd0omb3', title: 'Ritus Pemujaan Iblis', description: 'Sebuah keluarga pindah ke rumah baru dan menemukan bahwa tetangga mereka adalah bagian dari kultus sesat.', embedUrl: 'https://movearnpre.com/embed/d4iihcd0omb3' },
+            { id: 'w9161esw5smo', title: 'Janji di Bawah Senja', description: 'Kisah cinta seumur hidup yang diuji oleh waktu, jarak, dan sebuah janji yang dibuat saat matahari terbenam.', embedUrl: 'https://movearnpre.com/embed/w9161esw5smo' },
         ];
 
-        // Variabel Global
         let currentMovieId = null;
         let unsubscribeComments = null;
         let unsubscribeLikes = null;
         let userId = null;
+        let isAuthReady = false;
 
         const gallery = document.getElementById('movieGallery');
         const player = document.getElementById('videoPlayer');
         const titleElement = document.getElementById('videoTitle');
         const descriptionElement = document.getElementById('videoDescription');
-        const searchBar = document.getElementById('searchBar');
         const likeBtn = document.getElementById('likeBtn');
         const likeIcon = document.getElementById('likeIcon');
         const likeCount = document.getElementById('likeCount');
@@ -158,8 +164,9 @@
         const commentList = document.getElementById('commentList');
         const commentForm = document.getElementById('commentForm');
         const commentInput = document.getElementById('commentInput');
+        const commentSubmitBtn = document.getElementById('commentSubmitBtn');
+        const searchBar = document.getElementById('searchBar');
 
-        // Fungsi untuk menampilkan film di galeri
         function displayMovies(movieList) {
             gallery.innerHTML = '';
             movieList.forEach(movie => {
@@ -172,9 +179,8 @@
             });
         }
         
-        // Fungsi untuk memutar film dan memuat data interaksi
         async function playMovie(movie) {
-            if (currentMovieId === movie.id) return;
+            if (currentMovieId === movie.id || !isAuthReady) return;
             currentMovieId = movie.id;
 
             player.src = movie.embedUrl;
@@ -182,56 +188,44 @@
             descriptionElement.textContent = movie.description;
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Hentikan listener sebelumnya
+            likeBtn.disabled = false;
+            commentInput.disabled = false;
+            commentSubmitBtn.disabled = false;
+            
             if (unsubscribeLikes) unsubscribeLikes();
             if (unsubscribeComments) unsubscribeComments();
 
-            // Setup listener baru untuk suka dan komentar film yang dipilih
             const movieDocRef = doc(db, `artifacts/${appId}/public/data/movies`, currentMovieId);
             const commentsColRef = collection(db, `artifacts/${appId}/public/data/movies/${currentMovieId}/comments`);
 
-            // Listener untuk suka (real-time)
             unsubscribeLikes = onSnapshot(movieDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    likeCount.textContent = docSnap.data().likes || 0;
-                } else {
-                    likeCount.textContent = 0;
-                }
+                likeCount.textContent = docSnap.exists() ? docSnap.data().likes || 0 : 0;
             });
-
-            // Listener untuk komentar (real-time)
+            
             const q = query(commentsColRef, orderBy("timestamp", "desc"));
             unsubscribeComments = onSnapshot(q, (snapshot) => {
                 commentList.innerHTML = '';
-                if(snapshot.empty){
+                if (snapshot.empty) {
                    commentList.innerHTML = `<p class="text-gray-500 text-center italic">Jadilah yang pertama berkomentar!</p>`;
                 } else {
                    snapshot.forEach(doc => {
                         const commentData = doc.data();
                         const commentEl = document.createElement('div');
                         commentEl.className = 'bg-gray-700 rounded-lg p-3';
-                        commentEl.innerHTML = `
-                            <div class="flex items-center mb-1">
-                                <i class="fa-solid fa-user-astronaut text-cyan-400 text-sm mr-2"></i>
-                                <p class="text-white font-semibold text-sm">${commentData.author || 'Pengunjung'}</p>
-                            </div>
-                            <p class="text-gray-300 text-sm">${commentData.text}</p>
-                        `;
+                        commentEl.innerHTML = `<div class="flex items-center mb-1"><i class="fa-solid fa-user-astronaut text-cyan-400 text-sm mr-2"></i><p class="text-white font-semibold text-sm">${commentData.author || 'Pengunjung'}</p></div><p class="text-gray-300 text-sm break-words">${commentData.text}</p>`;
                         commentList.appendChild(commentEl);
                     });
                 }
                 commentCount.textContent = snapshot.size;
             });
             
-            // Periksa apakah pengguna sudah menyukai film ini
-            checkIfLiked();
+            await checkIfLiked();
         }
         
-        // Cek status suka
         async function checkIfLiked() {
-            if (!userId) return;
-            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/likes`, currentMovieId);
-            const docSnap = await getDoc(userDocRef);
+            if (!userId || !currentMovieId) return;
+            const userLikeDocRef = doc(db, `artifacts/${appId}/users/${userId}/likes`, currentMovieId);
+            const docSnap = await getDoc(userLikeDocRef);
             if (docSnap.exists()) {
                 likeIcon.classList.add('fa-solid', 'liked');
                 likeIcon.classList.remove('fa-regular');
@@ -241,70 +235,77 @@
             }
         }
         
-        // Fungsi untuk menangani klik tombol suka
         async function handleLike() {
             if (!currentMovieId || !userId) return;
-            
+            likeBtn.disabled = true;
+
             const movieDocRef = doc(db, `artifacts/${appId}/public/data/movies`, currentMovieId);
             const userLikeDocRef = doc(db, `artifacts/${appId}/users/${userId}/likes`, currentMovieId);
             
-            const userLikeSnap = await getDoc(userLikeDocRef);
-
-            if (userLikeSnap.exists()) {
-                // Unlike
-                await updateDoc(movieDocRef, { likes: increment(-1) });
-                await deleteDoc(userLikeDocRef);
-                likeIcon.classList.add('fa-regular');
-                likeIcon.classList.remove('fa-solid', 'liked');
-            } else {
-                // Like
-                await setDoc(movieDocRef, { likes: increment(1) }, { merge: true });
-                await setDoc(userLikeDocRef, { likedAt: serverTimestamp() });
-                likeIcon.classList.add('fa-solid', 'liked');
-                likeIcon.classList.remove('fa-regular');
+            try {
+                const userLikeSnap = await getDoc(userLikeDocRef);
+                if (userLikeSnap.exists()) {
+                    await updateDoc(movieDocRef, { likes: increment(-1) });
+                    await deleteDoc(userLikeDocRef);
+                } else {
+                    await setDoc(movieDocRef, { likes: increment(1) }, { merge: true });
+                    await setDoc(userLikeDocRef, { likedAt: serverTimestamp() });
+                }
+                await checkIfLiked();
+            } catch (error) {
+                console.error("Error saat menyukai: ", error);
+            } finally {
+                likeBtn.disabled = false;
             }
         }
 
-        // Fungsi untuk menangani pengiriman komentar
         async function handleCommentSubmit(e) {
             e.preventDefault();
             const commentText = commentInput.value.trim();
             if (!commentText || !currentMovieId || !userId) return;
 
-            const commentsColRef = collection(db, `artifacts/${appId}/public/data/movies/${currentMovieId}/comments`);
-            await addDoc(commentsColRef, {
-                text: commentText,
-                author: `Pengunjung-${userId.substring(0, 5)}`,
-                timestamp: serverTimestamp()
-            });
-
-            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
+            commentInput.disabled = true;
+            
+            try {
+                const commentsColRef = collection(db, `artifacts/${appId}/public/data/movies/${currentMovieId}/comments`);
+                await addDoc(commentsColRef, {
+                    text: commentText,
+                    author: `Pengunjung-${userId.substring(0, 5)}`,
+                    timestamp: serverTimestamp()
+                });
+                commentInput.value = '';
+            } catch (error) {
+                console.error("Error saat mengirim komentar: ", error);
+            } finally {
+                commentSubmitBtn.disabled = false;
+                commentInput.disabled = false;
+            }
         }
 
-        // Autentikasi Pengguna
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Pengguna sudah masuk
                 userId = user.uid;
-                // Inisialisasi halaman setelah user siap
+                isAuthReady = true;
                 if (movies.length > 0) {
                     await playMovie(movies[0]);
                 }
             } else {
-                // Pengguna belum masuk, coba masuk secara anonim
                 try {
-                     if (typeof __initial_auth_token !== 'undefined') { 
-                        await signInWithCustomToken(auth, __initial_auth_token); 
-                     } else { 
-                        await signInAnonymously(auth); 
+                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                     } else {
+                        await signInAnonymously(auth);
                      }
                 } catch(error) {
-                    console.error("Gagal masuk secara anonim: ", error);
+                    console.error("Gagal masuk: ", error);
+                    commentList.innerHTML = `<p class="text-red-500 text-center">Tidak dapat terhubung ke layanan. Silakan refresh halaman.</p>`;
                 }
             }
         });
         
-        // Event Listeners
+        displayMovies(movies);
+        
         searchBar.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredMovies = movies.filter(movie => movie.title.toLowerCase().includes(searchTerm));
@@ -312,9 +313,6 @@
         });
         likeBtn.addEventListener('click', handleLike);
         commentForm.addEventListener('submit', handleCommentSubmit);
-        
-        // Inisialisasi awal
-        displayMovies(movies);
     </script>
 </body>
 </html>
